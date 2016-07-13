@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onError(Throwable e) {
             Log.d("onError", "onError");
+            Log.d("Dsd", ":");
         }
     };
 

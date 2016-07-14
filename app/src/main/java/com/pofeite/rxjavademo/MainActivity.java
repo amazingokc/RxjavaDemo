@@ -2,10 +2,13 @@ package com.pofeite.rxjavademo;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import retrofit.GsonConverterFactory;
+import retrofit.Retrofit;
+import retrofit.RxJavaCallAdapterFactory;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -13,6 +16,8 @@ import rx.schedulers.Schedulers;
 public class MainActivity extends AppCompatActivity {
 
     private TextView txtinfo;
+    private Button btnClick;
+    private static final String ENDPOINT = "http://ip.taobao.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,42 +25,39 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         txtinfo = (TextView) findViewById(R.id.txt_info);
-//        rx.Observable<String> myObservable = rx.Observable.create(
-//                new rx.Observable.OnSubscribe<String>() {
-//                    @Override
-//                    public void call(Subscriber<? super String> sub) {
-//                        sub.onNext("Hello, world!");
-//                        sub.onCompleted();
-//                    }
-//                }
-//        );
+        btnClick = (Button) findViewById(R.id.btn_click);
+        btnClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Retrofit retrofit = new Retrofit.Builder()
+                        .baseUrl(ENDPOINT)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                        .build();
 
-        myObservable.subscribe(mySubscriber);
+                ApiService apiService = retrofit.create(ApiService.class);
+                apiService.getIpInfo("119.130.186.112")
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Subscriber<GetIpInfoResponse>() {
+                            @Override
+                            public void onCompleted() {
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                txtinfo.setText(e.getMessage());
+                            }
+
+                            @Override
+                            public void onNext(GetIpInfoResponse getIpInfoResponse) {
+                                txtinfo.setText(getIpInfoResponse.data.country+getIpInfoResponse.data.country_id
+                                        +getIpInfoResponse.data.area+getIpInfoResponse.data.area_id+getIpInfoResponse.data.ip);
+                            }
+                        });
+            }
+        });
 
     }
-
-    rx.Observable<String> myObservable = rx.Observable.just("hello world")
-            .subscribeOn(Schedulers.io())                //后台线程取数据，主线程显示
-            .observeOn(AndroidSchedulers.mainThread());
-
-    Subscriber<String> mySubscriber = new Subscriber<String>() {
-        @Override
-        public void onNext(String s) {
-//                System.out.println(s);
-            txtinfo.setText("_" + s);
-            Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onCompleted() {
-            Log.d("onCompleted", "onCompleted");
-        }
-
-        @Override
-        public void onError(Throwable e) {
-            Log.d("onError", "onError");
-            Log.d("Dsd", ":");
-        }
-    };
 
 }
